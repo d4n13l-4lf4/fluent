@@ -70,7 +70,7 @@ jobs:
       - name: List Output
         shell: bash
         run: |
-          echo ${{ steps.output.outputs }}
+          echo ${{ steps.output.outputs.repository_url }}
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -81,11 +81,13 @@ jobs:
         run: |
           export COMMIT_HASH=$(echo $GITHUB_SHA | cut -c 1-7)
           export IMAGE_TAG=${COMMIT_HASH:=latest}
-          export AWS_ECR_URI=$(terraform -chdir=./tf output module.ecr.repository_url)
+          export AWS_ECR_URI=${{ steps.output.outputs.repository_url }}
           printenv
 
       - name: Build and push
         uses: docker/build-push-action@v5
+        env:
+          AWS_ECR_URI: ${{ steps.output.outputs.repository_url }}
         with:
           context: .
           push: true
