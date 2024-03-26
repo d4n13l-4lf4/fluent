@@ -1,0 +1,86 @@
+name: "Terraform Apply"
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'release/**'
+
+env:
+  TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORG }}
+  TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+  TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
+  TF_CLOUD_PROJECT: "${{ secrets.TF_CLOUD_PROJECT }}"
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: 'us-west-2'
+  CONFIG_DIRECTORY: "./tf"
+
+jobs:
+  terraform:
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'staging' || 'test' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-west-2
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Upload Configuration
+        uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.0
+        id: apply-upload
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          directory: ${{ env.CONFIG_DIRECTORY }}
+
+      - name: Create Apply Run
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.0.0
+        id: apply-run
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          configuration_version: ${{ steps.apply-upload.outputs.configuration_version_id }}
+
+      - name: Apply
+        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.0.0
+        if: fromJSON(steps.apply-run.outputs.payload).data.attributes.actions.IsConfirmable
+        id: apply
+        with:
+          run: ${{ steps.apply-run.outputs.run_id }}
+          comment: "Apply Run from GitHub Actions CI ${{ github.sha }}"
+
+      - name: Terraform output
+        run: terraform -chdir=./tf output
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Setup commit
+        shell: bash
+        run: |
+          export COMMIT_HASH=$(echo $GITHUB_SHA | cut -c 1-7)
+          export IMAGE_TAG=${COMMIT_HASH:=latest}
+          export AWS_ECR_URI=$(terraform -chdir=./tf output module.ecr.repository_url)
+          printenv
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: arm64
+          tags: $AWS_ECR_URI:latest,$AWS_ECR_URI:$IMAGE_TAG
+
