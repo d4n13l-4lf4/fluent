@@ -13,8 +13,7 @@ module "ecr" {
         rulePriority: 1,
         description = "Keep last 3 images",
         selection = {
-          tagStatus = "tagged",
-          tagPrefixList = "v",
+          tagStatus = "any",
           countType = "imageCountMoreThan",
           countNumber = 3
         },
