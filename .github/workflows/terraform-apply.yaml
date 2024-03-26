@@ -65,7 +65,7 @@ jobs:
         uses: hashicorp/tfc-workflows-github/actions/workspace-output@v1.2.0
         id: output
         with:
-          workspace: $TF_WORKSPACE
+          workspace: ${{ env.TF_WORKSPACE }}
 
       - name: List Output
         shell: bash
@@ -78,14 +78,18 @@ jobs:
 
       - name: Setup commit
         shell: bash
+        id: setup-commit
         run: |
-          export COMMIT_HASH=$(echo $GITHUB_SHA | cut -c 1-7)
-          export IMAGE_TAG=${COMMIT_HASH:=latest}
-          export AWS_ECR_URI=$(terraform -chdir=./tf output module.ecr.repository_url)
-          printenv
+          COMMIT_HASH=$(echo $GITHUB_SHA | cut -c 1-7)
+          AWS_ECR_URI=$(echo ${{ steps.output.outputs }} | jq '.outputs[] | select(.name == "repository_url").value')
+          echo "image_tag=${COMMIT_HASH:=latest}" >> "$GITHUB_OUTPUT"
+          echo "aws_ecr_uri=$AWS_ECR_URI" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v5
+        env:
+          AWS_ECR_URI: ${{ steps.setup-commit.outputs.aws_ecr_uri }}
+          IMAGE_TAG: ${{ steps.setup-commit.outputs.image_tag }}
         with:
           context: .
           push: true
