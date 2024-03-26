@@ -64,6 +64,9 @@ jobs:
       - name: Output
         uses: hashicorp/tfc-workflows-github/actions/workspace-output@v1.2.0
         id: output
+        with:
+          workspace: $TF_WORKSPACE
+
       - name: List Output
         shell: bash
         run: |
