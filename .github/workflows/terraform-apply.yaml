@@ -61,8 +61,13 @@ jobs:
           run: ${{ steps.apply-run.outputs.run_id }}
           comment: "Apply Run from GitHub Actions CI ${{ github.sha }}"
 
-      - name: Terraform output
-        run: terraform -chdir=./tf output
+      - name: Output
+        uses: hashicorp/tfc-workflows-github/actions/workspace-output@v1.0.0
+        id: output
+      - name: List Output
+        shell: bash
+        run: |
+          echo ${{ steps.output.outputs }}
 
       - name: Login to Amazon ECR
         id: login-ecr
