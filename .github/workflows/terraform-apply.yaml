@@ -70,7 +70,7 @@ jobs:
       - name: List Output
         shell: bash
         run: |
-          echo ${{ fromJson(steps.output.outputs) }}
+          echo ${{ toJSON(steps.output.outputs) }}
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -81,7 +81,7 @@ jobs:
         id: setup-commit
         run: |
           COMMIT_HASH=$(echo $GITHUB_SHA | cut -c 1-7)
-          AWS_ECR_URI=$(echo ${{ fromJson(steps.output.outputs) }} | jq '.outputs[] | select(.name == "repository_url").value')
+          AWS_ECR_URI=$(echo ${{ toJSON(steps.output.outputs) }} | jq '.outputs[] | select(.name == "repository_url").value')
           echo "image_tag=${COMMIT_HASH:=latest}" >> "$GITHUB_OUTPUT"
           echo "aws_ecr_uri=$AWS_ECR_URI" >> "$GITHUB_OUTPUT"
 
