@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 RUN npm i -g npm@10.5.0
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY . ./
 
