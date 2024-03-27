@@ -81,7 +81,7 @@ jobs:
         id: setup-commit
         run: |
           COMMIT_HASH=$(echo $GITHUB_SHA | cut -c 1-7)
-          TF_OUTPUTS=$(echo ${{ steps.output.outputs.outputs }})
+          TF_OUTPUTS=$(echo '${{ steps.output.outputs.outputs }}')
           echo "::add-mask::$TF_OUTPUTS"
           AWS_ECR_URI=$(echo '$TF_OUTPUTS' | jq '.[] | select(.name == "repository_url").value')
           echo "image_tag=${COMMIT_HASH:=latest}" >> "$GITHUB_OUTPUT"
