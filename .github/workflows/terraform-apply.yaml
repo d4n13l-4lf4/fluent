@@ -81,7 +81,7 @@ jobs:
         id: setup-commit
         run: |
           COMMIT_HASH=$(echo $GITHUB_SHA | cut -c 1-7)
-          AWS_ECR_URI=$(echo '${{ steps.output.outputs }}' | jq '.outputs[] | select(.name == "repository_url").value')
+          AWS_ECR_URI=$(echo ${{ steps.output.outputs.outputs }} | jq '.[] | select(.name == "repository_url").value')
           echo "image_tag=${COMMIT_HASH:=latest}" >> "$GITHUB_OUTPUT"
           echo "aws_ecr_uri=$AWS_ECR_URI" >> "$GITHUB_OUTPUT"
 
