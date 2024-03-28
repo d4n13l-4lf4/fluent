@@ -6,6 +6,7 @@ module "ecr" {
   repository_name = "fluent-${var.stage}"
   repository_type = "private"
   repository_image_tag_mutability = "IMMUTABLE"
+  repository_image_scan_on_push = false
 
   repository_lifecycle_policy = jsonencode({
     rules = [

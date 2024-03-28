@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64 arm64v8/node:iron-bullseye AS build
+FROM node:iron-bullseye AS build
 
 WORKDIR /usr/src/app
 
@@ -11,7 +11,7 @@ COPY . ./
 
 RUN npm run build --omit=dev && npm prune --production
 
-FROM --platform=linux/arm64 arm64v8/node:iron-slim
+FROM node:iron-slim
 
 ENV PORT=3000
 ENV NODE_ENV=production

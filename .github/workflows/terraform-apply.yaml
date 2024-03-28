@@ -67,16 +67,11 @@ jobs:
         with:
           workspace: ${{ env.TF_WORKSPACE }}
 
-      - name: List Output
-        shell: bash
-        run: |
-          echo '${{ toJSON(steps.output.outputs) }}'
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Setup commit
+      - name: Setup ECR Pushing
         shell: bash
         id: setup-commit
         run: |
@@ -87,12 +82,15 @@ jobs:
           echo "image_tag=${COMMIT_HASH:=latest}" >> "$GITHUB_OUTPUT"
           #echo "::add-mask::$AWS_ECR_URI"
           echo "aws_ecr_uri=$AWS_ECR_URI" >> "$GITHUB_OUTPUT"
+          REPOSITORY_NAME=$(echo ${AWS_ECR_URI##*/})
+          aws ecr batch-delete-image --repository-name $REPOSITORY_NAME --image-ids imageTag=latest
 
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          platforms: arm64
+          provenance: false
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.setup-commit.outputs.aws_ecr_uri }}:latest,${{ steps.setup-commit.outputs.aws_ecr_uri }}:${{ steps.setup-commit.outputs.image_tag }}
 
